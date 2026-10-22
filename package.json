@@ -7,11 +7,22 @@
   "type": "module",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "node --test",
+    "setup:dsh": "node tools/setup-dsh-profile.js"
   },
   "dependencies": {
+    "@deepseek-ai/dsh-sdk-client": "0.2.0-rc.2",
+    "@deepseek-ai/dsh-sdk-protocol": "0.2.0-rc.2",
+    "@deepseek-ai/dsh-tools": "0.2.0-rc.2",
     "discord.js": "^14.25.1",
     "dotenv": "^17.3.1",
-    "openai": "^6.25.0"
+    "google-auth-library": "10.9.1"
+  },
+  "engines": {
+    "node": ">=22.19.0"
+  },
+  "overrides": {
+    "@modelcontextprotocol/client": "2.2.0",
+    "fflate": "0.8.3"
   }
 }

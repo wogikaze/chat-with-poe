@@ -1,0 +1,15 @@
+# Automatic replies
+
+Unmentioned messages in server channels are classified by the configured DeepSeek Harness model. The classifier receives the latest cached channel context (up to eight messages), including mention targets, and returns whether a reply is useful plus its confidence. Messages that start with `/` receive high priority during classification so the model checks whether they are bot commands. A plain text message beginning with `/im` goes directly to the dedicated lightweight romanized Japanese converter and bypasses classification and conversation batching. Messages that mention another user without mentioning the bot are skipped before classification; the classifier also avoids interrupting messages addressed to another person. The bot replies only when the classifier approves and its confidence meets `AUTO_REPLY_THRESHOLD` (default `0.90`). Direct bot mentions keep their existing behavior and bypass this classifier.
+
+Set `AUTO_REPLY_THRESHOLD` and `AUTO_REPLY_TIMEOUT_MS` in `.env` to override the defaults. If classification fails, times out, or returns invalid JSON, the bot skips the automatic reply. The timeout defaults to 8000 milliseconds.
+
+The classifier receives recent message text, author display names, channel name, and image attachment names. It does not receive image bytes. If it approves a reply, the user's message and supported image attachments are sent to DeepSeek Harness as usual.
+
+Messages from the same author in the same channel are collected until 1.2 seconds of silence, with a hard 4-second collection deadline. A batch is classified once and then answered. Posts arriving during the first generation can trigger one combined revision; posts arriving during that revision form the next batch. Each batch therefore has at most two answer generations, so continuous posts cannot postpone delivery indefinitely. At most 64 author/channel conversations are active, with up to 32 pending messages per conversation. Direct mentions rejected by those limits receive a busy response.
+
+Message splitting counts UTF-16 code units, preserves surrogate pairs, and closes/reopens fenced blocks with their language and original fence length. All response fragments disable parsed mentions. `/imakita` uses private (ephemeral) replies, including every continuation fragment.
+
+Provider failures are logged as fixed event/category labels. Upstream messages, response bodies and prompts are not included in diagnostic logs or public error replies.
+
+IM conversions also run independently of pending replies from the same author/channel. They use the dedicated Vertex client (`tools/vertex-chat-client.js`) with Gemma 4 26B A4B, a lightweight Flash-Lite availability fallback, and their own bounded concurrency/deadline. They use up to eight preceding channel messages as text-only conversion context, with a one-second history lookup bound and cache fallback. They do not enter the coordinator's pending messages, so they cannot trigger regeneration of an ordinary answer. See README.md for configuration.
